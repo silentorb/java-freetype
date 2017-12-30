@@ -2,12 +2,6 @@
 
 #include <jni.h>
 
-#if defined (_MSC_VER)
-#define JNIEXPORT __declspec( dllexport )
-#else
-#define JNIEXPORT
-#endif
-
 extern "C" {
 
 JNIEXPORT void JNICALL Java_mythic_MythicInterface_initialize(JNIEnv *env, jobject self);

@@ -1,35 +1,5 @@
 #include "interface.h"
 #include <iostream>
-#include <desktop/Desktop.h>
-#include "lookinglass/Graphic_Options.h"
-#include <clienting/Mythic_Client.h>
-#include <Marloth_Myth.h>
-
-using namespace mythic;
-
-#ifndef GAME_WIDTH
-#define GAME_WIDTH 900
-#endif
-
-#ifndef GAME_HEIGHT
-#define GAME_HEIGHT 600
-#endif
-
-static desktop::Desktop desk("Marloth");
-std::unique_ptr<Marloth_Myth> marloth_myth;
-
-JNIEXPORT void JNICALL Java_mythic_MythicInterface_initialize(JNIEnv *env, jobject self) {
-  try {
-    lookinglass::Graphic_Options graphic_options(GAME_WIDTH, GAME_HEIGHT);
-    graphic_options.set_multisamples(4);
-    marloth_myth.reset(new Marloth_Myth(desk, graphic_options));
-    marloth_myth->load();
-  }
-  catch (const std::exception &e) {
-    jclass jc = env->FindClass("java/lang/Error");
-    env->ThrowNew(jc, e.what());
-  }
-}
 
 //JNIEXPORT int JNICALL Java_mythic_MythicInterface_update(JNIEnv *env, jobject self) {
 //  if (!marloth_myth->update())
@@ -40,7 +10,7 @@ JNIEXPORT void JNICALL Java_mythic_MythicInterface_initialize(JNIEnv *env, jobje
 
 JNIEXPORT void JNICALL Java_mythic_MythicInterface_loop(JNIEnv *env, jobject self) {
   try {
-    marloth_myth->loop();
+//    marloth_myth->loop();
   }
   catch (const std::exception &e) {
     jclass jc = env->FindClass("java/lang/Error");
@@ -50,7 +20,7 @@ JNIEXPORT void JNICALL Java_mythic_MythicInterface_loop(JNIEnv *env, jobject sel
 
 JNIEXPORT void JNICALL Java_mythic_MythicInterface_shutdown(JNIEnv *env, jobject self) {
   try {
-    marloth_myth.reset();
+//    marloth_myth.reset();
   }
   catch (const std::exception &e) {
     jclass jc = env->FindClass("java/lang/Error");
@@ -62,16 +32,16 @@ JNIEXPORT void JNICALL Java_mythic_MythicInterface_shutdown(JNIEnv *env, jobject
 //  return new char[byte_count];
 //}
 
-struct Raw_Mesh {
-    int32 vertex_float_count;
-    int32 face_count;
-    float *vertices;
-    float *offsets;
-    float *counts;
-};
+//struct Raw_Mesh {
+////    int32 vertex_float_count;
+////    int32 face_count;
+//    float *vertices;
+//    float *offsets;
+//    float *counts;
+//};
 
 JNIEXPORT int JNICALL Java_mythic_MythicInterface_createMesh(JNIEnv *env, jobject self, jlong mesh_pointer) {
-  auto mesh = (Raw_Mesh *) (void *) mesh_pointer;
+//  auto mesh = (Raw_Mesh *) (void *) mesh_pointer;
 //  jclass jRawMesh = env->GetObjectClass(mesh);
 //  jfieldID field_vertexSize = env->GetFieldID(jRawMesh, "")
   return 0;
