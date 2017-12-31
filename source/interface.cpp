@@ -27,7 +27,7 @@ struct JavaString {
 };
 
 JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
-                                                                  jlong freetype, jstring filename) {
+                                                                   jlong freetype, jstring filename) {
   try {
     JavaString path{env, filename};
     if (!path.c_str) {
@@ -45,7 +45,8 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, 
   }
 }
 
-JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face) {
+JNIEXPORT jobject JNICALL
+Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face) {
   try {
     auto dimensions = get_texture_dimensions((FT_Face) face);
     auto vector_class = env->FindClass("mythic/typography/IntegerVector2");
@@ -62,13 +63,38 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_getTextureDimensions
 }
 
 
-JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFace(JNIEnv *env, jobject self,
-                                                                       jlong freetype, jlong face,
-                                                                       jobject character_map,
-                                                                       jlong buffer,
-                                                                       jint width, jint height) {
+JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JNIEnv *env, jobject self,
+                                                                              jlong face_address, jchar c) {
   try {
-    render_font(env, (FT_Library) freetype, (FT_Face) face, character_map, (unsigned char *) buffer, width, height);
+    auto character_class = env->FindClass("mythic/typography/GlyphInfo");
+    auto constructor = env->GetMethodID(character_class, "<init>", "(IIIII)V");
+
+    auto face = (FT_Face) face_address;
+    if (FT_Load_Char(face, c, FT_LOAD_RENDER) != 0)
+      throw std::runtime_error("Failed to load glyph");
+
+    auto glyph = face->glyph;
+    auto bitmap = face->glyph->bitmap;
+
+    return env->NewObject(character_class, constructor,
+                          bitmap.width, bitmap.rows,
+                          glyph->bitmap_left, glyph->bitmap_top,
+                          glyph->advance.x
+    );
+  }
+  catch (const std::exception &e) {
+    throw_error(env, e.what());
+    return nullptr;
+  }
+}
+
+
+JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFaces(JNIEnv *env, jobject self,
+                                                                       jlong freetype, jlong face,
+                                                                       jlong buffer,
+                                                                       jint width) {
+  try {
+    render_font((FT_Library) freetype, (FT_Face) face, (unsigned char *) buffer, width);
   }
   catch (const std::exception &e) {
     throw_error(env, e.what());

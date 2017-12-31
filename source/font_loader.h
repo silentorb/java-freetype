@@ -65,19 +65,10 @@ ivec2 get_texture_dimensions(FT_Face face) {
   return {(int) max_width + 1, (int) offset};
 }
 
-void render_font(JNIEnv *env, const FT_Library &library, FT_Face face, jobject character_map, unsigned char *buffer,
-                 int width,
-                 int height) {
+void render_font(const FT_Library &library, FT_Face face, unsigned char *buffer, int width) {
   int memory_offset = 0;
   float vertical_offset = 0;
   const int memory_margin = width * 2;
-
-//  auto map_class = env->GetObjectClass(character_map);
-  auto map_class = env->FindClass("java/util/HashMap");
-  auto method = env->GetMethodID(map_class, "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
-  check_exception(env, "Could not load Map.put method.");
-  auto character_class = env->FindClass("mythic/typography/CharacterInfo");
-  auto constructor = env->GetMethodID(character_class, "<init>", "(IIIIIFF)V");
 
   for (unsigned char c = first_char; c <= last_char; c++) {
     if (FT_Load_Char(face, c, FT_LOAD_RENDER) != 0)
@@ -88,17 +79,7 @@ void render_font(JNIEnv *env, const FT_Library &library, FT_Face face, jobject c
     if (!face->glyph->bitmap.buffer)
       FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
 
-    auto glyph = face->glyph;
     auto bitmap = face->glyph->bitmap;
-
-    auto character = env->NewObject(character_class, constructor,
-                                    bitmap.width, bitmap.rows,
-                                    glyph->bitmap_left, glyph->bitmap_top,
-                                    glyph->advance.x,
-                                    vertical_offset / height,
-                                    (float) bitmap.rows / height
-    );
-    env->CallVoidMethod(character_map, method, (jchar)c, character);
 
     memory_offset++;
     for (int i = 0; i < bitmap.rows; i++) {
