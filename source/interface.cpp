@@ -1,62 +1,95 @@
-#include "interface.h"
 #include <iostream>
+#include <jni.h>
+#include "font_loader.h"
 
-//JNIEXPORT int JNICALL Java_mythic_MythicInterface_update(JNIEnv *env, jobject self) {
-//  if (!marloth_myth->update())
-//    return 1;
-//
-//  return 0;
-//}
+extern "C" {
 
-JNIEXPORT void JNICALL Java_mythic_MythicInterface_loop(JNIEnv *env, jobject self) {
+void throw_error(JNIEnv *env, const std::string &message) {
+  jclass jc = env->FindClass("java/lang/Error");
+  env->ThrowNew(jc, message.c_str());
+}
+
+struct JavaString {
+    jboolean is_copy;
+    const char *c_str;
+    JNIEnv *env;
+    jstring java_string;
+
+    JavaString(JNIEnv *env, jstring java_string) : env(env), java_string(java_string) {
+      c_str = env->GetStringUTFChars(java_string, &is_copy);
+    }
+
+    ~JavaString() {
+      if (is_copy == JNI_TRUE) {
+        env->ReleaseStringUTFChars(java_string, c_str);
+      }
+    }
+};
+
+JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
+                                                                  jlong freetype, jstring filename) {
   try {
-//    marloth_myth->loop();
+    JavaString path{env, filename};
+    if (!path.c_str) {
+      throw_error(env, "Could not allocate memory for string");
+      return 0;
+    }
+    else {
+      auto result = load_font((FT_Library) freetype, path.c_str);
+      return (jlong) result;
+    }
   }
   catch (const std::exception &e) {
-    jclass jc = env->FindClass("java/lang/Error");
-    env->ThrowNew(jc, e.what());
+    throw_error(env, e.what());
+    return 0;
   }
 }
 
-JNIEXPORT void JNICALL Java_mythic_MythicInterface_shutdown(JNIEnv *env, jobject self) {
+JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face) {
   try {
-//    marloth_myth.reset();
+    auto dimensions = get_texture_dimensions((FT_Face) face);
+    auto vector_class = env->FindClass("mythic/typography/IntegerVector2");
+    check_exception(env, "Could not find IntegerVector2 class.");
+    auto constructor = env->GetMethodID(vector_class, "<init>", "(II)V");
+    auto result = env->NewObject(vector_class, constructor, dimensions.x, dimensions.y);
+    check_exception(env, "Error instantiating IntegerVector2 class.");
+    return result;
   }
   catch (const std::exception &e) {
-    jclass jc = env->FindClass("java/lang/Error");
-    env->ThrowNew(jc, e.what());
+    throw_error(env, e.what());
+    return nullptr;
   }
 }
 
-//JNIEXPORT jobject JNICALL Java_mythic_MythicInterface_allocate(JNIEnv *env, jobject self, jobject byte_count) {
-//  return new char[byte_count];
-//}
 
-//struct Raw_Mesh {
-////    int32 vertex_float_count;
-////    int32 face_count;
-//    float *vertices;
-//    float *offsets;
-//    float *counts;
-//};
-
-JNIEXPORT int JNICALL Java_mythic_MythicInterface_createMesh(JNIEnv *env, jobject self, jlong mesh_pointer) {
-//  auto mesh = (Raw_Mesh *) (void *) mesh_pointer;
-//  jclass jRawMesh = env->GetObjectClass(mesh);
-//  jfieldID field_vertexSize = env->GetFieldID(jRawMesh, "")
-  return 0;
+JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFace(JNIEnv *env, jobject self,
+                                                                       jlong freetype, jlong face,
+                                                                       jobject character_map,
+                                                                       jlong buffer,
+                                                                       jint width, jint height) {
+  try {
+    render_font(env, (FT_Library) freetype, (FT_Face) face, character_map, (unsigned char *) buffer, width, height);
+  }
+  catch (const std::exception &e) {
+    throw_error(env, e.what());
+  }
 }
 
-//JNIEXPORT int JNICALL Java_mythic_MythicInterface_resources_add_mesh(const char *name, sculpting::Raw_Mesh *mesh,
-//                                                  sculpting::Array<sculpting::Raw_Color_Info> *face_details) {
-//  auto &renderer = marloth_myth->get_client().get_renderer();
-//  auto &vertex_schema = renderer.get_shader_library().get_basic_scenery_vertex_schema();
-////  renderer.get_model_manager().add_mesh(name, mesh, face_details, vertex_schema);
-//  return 0;
-//}
+JNIEXPORT void JNICALL Java_mythic_typography_FaceLoader_releaseFace(JNIEnv *env, jobject self, jlong face) {
+  FT_Done_Face((FT_Face) face);
+}
 
-//JNIEXPORT void JNICALL Java_mythic_MythicInterface_test(JNIEnv *env, jobject self, jlong pointer) {
-//  auto l = (__int64) pointer;
-//  auto local_pointer = reinterpret_cast<char const *>(l);
-//  delete local_pointer;
-//}
+JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_initializeFreetype(JNIEnv *env, jobject self) {
+  FT_Library library = nullptr;
+
+  if (FT_Init_FreeType(&library))
+    throw_error(env, "Could not init FreeType Library");
+
+  return (jlong) library;
+}
+
+JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_releaseFreetype(JNIEnv *env, jobject self, jlong freetype) {
+  FT_Done_FreeType((FT_Library) freetype);
+}
+
+}
