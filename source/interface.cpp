@@ -27,7 +27,7 @@ struct JavaString {
 };
 
 JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
-                                                                   jlong freetype, jstring filename) {
+                                                                   jlong freetype, jstring filename, jint pixelHeight) {
   try {
     JavaString path{env, filename};
     if (!path.c_str) {
@@ -35,7 +35,7 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, 
       return 0;
     }
     else {
-      auto result = load_font((FT_Library) freetype, path.c_str);
+      auto result = load_font((FT_Library) freetype, path.c_str, (unsigned int) pixelHeight);
       return (jlong) result;
     }
   }
@@ -90,9 +90,9 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JN
 
 
 JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFaces(JNIEnv *env, jobject self,
-                                                                       jlong freetype, jlong face,
-                                                                       jlong buffer,
-                                                                       jint width) {
+                                                                        jlong freetype, jlong face,
+                                                                        jlong buffer,
+                                                                        jint width) {
   try {
     render_font((FT_Library) freetype, (FT_Face) face, (unsigned char *) buffer, width);
   }

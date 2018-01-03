@@ -33,13 +33,13 @@ void check_exception(JNIEnv *env, const std::string &message) {
   }
 }
 
-FT_Face load_font(const FT_Library &library, const char *filename) {
+FT_Face load_font(const FT_Library &library, const char *filename, FT_UInt pixelHeight) {
   FT_Face face;
   auto error = FT_New_Face(library, filename, 0, &face);
   if (error)
     throw std::runtime_error(std::string("ERROR::FREETYPE: Failed to load font: ") + filename);
 
-  FT_Set_Pixel_Sizes(face, 0, 48);
+  FT_Set_Pixel_Sizes(face, 0, pixelHeight);
   return face;
 }
 
