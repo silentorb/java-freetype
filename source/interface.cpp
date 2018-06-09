@@ -27,7 +27,8 @@ struct JavaString {
 };
 
 JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
-                                                                   jlong freetype, jstring filename, jint pixelHeight) {
+                                                                   jlong freetype, jstring filename,
+                                                                   jint pixelWidth, jint pixelHeight) {
   try {
     JavaString path{env, filename};
     if (!path.c_str) {
@@ -35,7 +36,7 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, 
       return 0;
     }
     else {
-      auto result = load_font((FT_Library) freetype, path.c_str, (unsigned int) pixelHeight);
+      auto result = load_font((FT_Library) freetype, path.c_str, (unsigned int) pixelWidth, (unsigned int) pixelHeight);
       return (jlong) result;
     }
   }
@@ -46,9 +47,10 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, 
 }
 
 JNIEXPORT jobject JNICALL
-Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face) {
+Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face,
+                                                       jint loadFlags, jint renderMode) {
   try {
-    auto dimensions = get_texture_dimensions((FT_Face) face);
+    auto dimensions = get_texture_dimensions((FT_Face) face, loadFlags, static_cast<FT_Render_Mode>(renderMode));
     auto vector_class = env->FindClass("mythic/typography/IntegerVector2");
     check_exception(env, "Could not find IntegerVector2 class.");
     auto constructor = env->GetMethodID(vector_class, "<init>", "(II)V");
@@ -64,14 +66,18 @@ Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self
 
 
 JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JNIEnv *env, jobject self,
-                                                                              jlong face_address, jchar c) {
+                                                                              jlong face_address, jchar c,
+                                                                              jint loadFlags, jint renderMode) {
   try {
     auto character_class = env->FindClass("mythic/typography/GlyphInfo");
     auto constructor = env->GetMethodID(character_class, "<init>", "(IIIII)V");
 
     auto face = (FT_Face) face_address;
-    if (FT_Load_Char(face, c, FT_LOAD_RENDER) != 0)
+    if (FT_Load_Char(face, c, loadFlags) != 0)
       throw std::runtime_error("Failed to load glyph");
+
+    if (!face->glyph->bitmap.buffer)
+      FT_Render_Glyph(face->glyph, static_cast<FT_Render_Mode>(renderMode));
 
     auto glyph = face->glyph;
     auto bitmap = face->glyph->bitmap;
@@ -79,7 +85,7 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JN
     return env->NewObject(character_class, constructor,
                           bitmap.width, bitmap.rows,
                           glyph->bitmap_left, glyph->bitmap_top,
-                          glyph->advance.x
+                          glyph->advance.x / 64
     );
   }
   catch (const std::exception &e) {
@@ -92,9 +98,11 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JN
 JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFaces(JNIEnv *env, jobject self,
                                                                         jlong freetype, jlong face,
                                                                         jlong buffer,
-                                                                        jint width) {
+                                                                        jint width,
+                                                                        jint loadFlags, jint renderMode) {
   try {
-    render_font((FT_Library) freetype, (FT_Face) face, (unsigned char *) buffer, width);
+    render_font((FT_Library) freetype, (FT_Face) face, (unsigned char *) buffer, width, loadFlags,
+                static_cast<FT_Render_Mode>(renderMode));
   }
   catch (const std::exception &e) {
     throw_error(env, e.what());
