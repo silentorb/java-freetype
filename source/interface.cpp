@@ -26,7 +26,7 @@ struct JavaString {
     }
 };
 
-JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
+JNIEXPORT jlong JNICALL Java_silentorb_mythic_typography_FaceLoader_loadFace(JNIEnv *env, jobject self,
                                                                    jlong freetype, jstring filename,
                                                                    jint pixelWidth, jint pixelHeight) {
   try {
@@ -47,11 +47,11 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_loadFace(JNIEnv *env, 
 }
 
 JNIEXPORT jobject JNICALL
-Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face,
+Java_silentorb_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self, jlong face,
                                                        jint loadFlags, jint renderMode) {
   try {
     auto dimensions = get_texture_dimensions((FT_Face) face, loadFlags, static_cast<FT_Render_Mode>(renderMode));
-    auto vector_class = env->FindClass("mythic/typography/IntegerVector2");
+    auto vector_class = env->FindClass("silentorb/mythic/typography/IntegerVector2");
     check_exception(env, "Could not find IntegerVector2 class.");
     auto constructor = env->GetMethodID(vector_class, "<init>", "(II)V");
     auto result = env->NewObject(vector_class, constructor, dimensions.x, dimensions.y);
@@ -65,11 +65,11 @@ Java_mythic_typography_FaceLoader_getTextureDimensions(JNIEnv *env, jobject self
 }
 
 
-JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JNIEnv *env, jobject self,
+JNIEXPORT jobject JNICALL Java_silentorb_mythic_typography_FaceLoader_loadCharacterInfo(JNIEnv *env, jobject self,
                                                                               jlong face_address, jchar c,
                                                                               jint loadFlags, jint renderMode) {
   try {
-    auto character_class = env->FindClass("mythic/typography/GlyphInfo");
+    auto character_class = env->FindClass("silentorb/mythic/typography/GlyphInfo");
     auto constructor = env->GetMethodID(character_class, "<init>", "(IIIII)V");
 
     auto face = (FT_Face) face_address;
@@ -95,7 +95,7 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_loadCharacterInfo(JN
 }
 
 
-JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFaces(JNIEnv *env, jobject self,
+JNIEXPORT void JNICALL Java_silentorb_mythic_typography_FaceLoader_renderFaces(JNIEnv *env, jobject self,
                                                                         jlong freetype, jlong face,
                                                                         jlong buffer,
                                                                         jint width,
@@ -109,11 +109,11 @@ JNIEXPORT jobject JNICALL Java_mythic_typography_FaceLoader_renderFaces(JNIEnv *
   }
 }
 
-JNIEXPORT void JNICALL Java_mythic_typography_FaceLoader_releaseFace(JNIEnv *env, jobject self, jlong face) {
+JNIEXPORT void JNICALL Java_silentorb_mythic_typography_FaceLoader_releaseFace(JNIEnv *env, jobject self, jlong face) {
   FT_Done_Face((FT_Face) face);
 }
 
-JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_initializeFreetype(JNIEnv *env, jobject self) {
+JNIEXPORT jlong JNICALL Java_silentorb_mythic_typography_FaceLoader_initializeFreetype(JNIEnv *env, jobject self) {
   FT_Library library = nullptr;
 
   if (FT_Init_FreeType(&library))
@@ -122,7 +122,7 @@ JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_initializeFreetype(JNI
   return (jlong) library;
 }
 
-JNIEXPORT jlong JNICALL Java_mythic_typography_FaceLoader_releaseFreetype(JNIEnv *env, jobject self, jlong freetype) {
+JNIEXPORT void JNICALL Java_silentorb_mythic_typography_FaceLoader_releaseFreetype(JNIEnv *env, jobject self, jlong freetype) {
   FT_Done_FreeType((FT_Library) freetype);
 }
 

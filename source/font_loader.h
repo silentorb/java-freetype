@@ -81,7 +81,7 @@ void render_font(const FT_Library &library, FT_Face face, unsigned char *buffer,
 
     auto bitmap = face->glyph->bitmap;
 
-    for (int i = 0; i < bitmap.rows; i++) {
+    for (unsigned int i = 0; i < bitmap.rows; i++) {
       memcpy(buffer + memory_offset, bitmap.buffer + i * bitmap.width, bitmap.width);
       memory_offset += width;
     }
